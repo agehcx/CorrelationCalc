@@ -99,12 +99,16 @@ def fetch_coingecko(symbol: str, lookback_days: int) -> pd.DataFrame:
     url = COINGECKO_MARKET_CHART.format(id=coin_id)
     params = {"vs_currency": "usd", "days": lookback_days, "interval": "hourly"}
 
-    api_key = os.getenv("COINGECKO_API_KEY", "CG-DATA-API-KEY")
+    api_key = os.getenv("COINGECKO_API_KEY")
+    demo_key = "CG-DATA-API-KEY"
     headers = {
         "accept": "application/json",
-        "x-cg-demo-api-key": api_key,  # works with demo key or real key
         "User-Agent": "correlation-calc/1.0",
     }
+    if api_key:
+        headers["x-cg-pro-api-key"] = api_key
+    else:
+        headers["x-cg-demo-api-key"] = demo_key
 
     resp = requests.get(url, params=params, headers=headers, timeout=20)
     try:
