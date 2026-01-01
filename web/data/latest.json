@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-01-01T00:00:00Z",
+  "lookback_days": 180,
+  "example_notional": 100.0,
+  "corr": 0.8227,
+  "stats": {
+    "mean": {"btc": -0.000039, "eth": 0.000063},
+    "std": {"btc": 0.004194, "eth": 0.007009},
+    "min": {"btc": -0.037185, "eth": -0.051771},
+    "max": {"btc": 0.034526, "eth": 0.07539}
+  },
+  "hedge_table": [
+    {"target": "BTC", "hedge": "ETH", "hedge_ratio_units": 0.492, "target_w": 0.670, "hedge_w": -0.330},
+    {"target": "ETH", "hedge": "BTC", "hedge_ratio_units": 1.375, "target_w": 0.421, "hedge_w": -0.579}
+  ],
+  "examples": [
+    {"target": "BTC", "hedge": "ETH", "target_dollars": 67.0, "hedge_dollars": -33.0, "hedge_units_per_target_unit": -0.492},
+    {"target": "ETH", "hedge": "BTC", "target_dollars": 42.1, "hedge_dollars": -57.9, "hedge_units_per_target_unit": -1.375}
+  ]
+}

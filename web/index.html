@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BTC/ETH Hedge Dashboard</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --accent: #22c55e;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 20% 20%, #1f2937 0%, #0b1020 45%, #060912 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 32px 20px 16px;
+      text-align: center;
+    }
+    h1 { margin: 0 0 8px; font-weight: 700; letter-spacing: -0.4px; }
+    p.lead { margin: 0; color: var(--muted); }
+    main { width: min(1100px, 96vw); margin: 0 auto 48px; display: grid; gap: 16px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    .card h2 { margin: 0 0 8px; font-size: 18px; }
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: #16a34a1a;
+      color: #bbf7d0;
+      border: 1px solid #16a34a33;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { text-align: left; padding: 10px 8px; }
+    th { color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+    tr + tr td { border-top: 1px solid var(--border); }
+    .muted { color: var(--muted); }
+    .flex { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .stat-value { font-size: 28px; font-weight: 700; }
+    .stat-label { color: var(--muted); }
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    .badge { padding: 4px 8px; border-radius: 8px; font-size: 12px; background: #334155; color: #cbd5e1; }
+    .error { color: #f87171; }
+    a { color: #a5b4fc; }
+    code { background: #1f2937; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="pill">BTC/ETH Hedge Monitor</div>
+    <h1>Hourly Correlation & Hedge Ratios</h1>
+    <p class="lead">Auto-refreshed hourly via GitHub Actions. Deploy on Vercel for easy access anywhere.</p>
+  </header>
+  <main>
+    <div class="card" id="summary">
+      <div class="grid">
+        <div>
+          <div class="stat-label">Correlation (BTC vs ETH)</div>
+          <div class="stat-value" id="corr">--</div>
+        </div>
+        <div>
+          <div class="stat-label">Lookback (days)</div>
+          <div class="stat-value" id="lookback">--</div>
+        </div>
+        <div>
+          <div class="stat-label">Last updated (UTC)</div>
+          <div class="stat-value" id="updated">--</div>
+        </div>
+      </div>
+      <div class="muted" style="margin-top:8px;">Example sizing uses the notional shown below.</div>
+    </div>
+
+    <div class="card" id="stats-card">
+      <h2>Return Stats</h2>
+      <table id="stats-table">
+        <thead>
+          <tr><th>Asset</th><th>Mean</th><th>Std</th><th>Min</th><th>Max</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card" id="hedge-card">
+      <h2>Min-Variance Hedge Ratios</h2>
+      <p class="muted">Long target, short hedge. Weights are dollar-neutral (abs weights sum to 1).</p>
+      <table id="hedge-table">
+        <thead>
+          <tr><th>Target</th><th>Hedge</th><th>Hedge units per 1 target</th><th>Target weight</th><th>Hedge weight</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card" id="examples-card">
+      <h2>Example Sizing</h2>
+      <div class="muted" id="notional-note">Using total absolute notional: $--</div>
+      <table id="examples-table">
+        <thead>
+          <tr><th>Target</th><th>Hedge</th><th>Long $ Target</th><th>Short $ Hedge</th><th>Hedge units per 1 target</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card" id="status-card" style="display:none;">
+      <h2>Status</h2>
+      <p class="error" id="status-text"></p>
+      <p class="muted">If you just deployed, wait for the GitHub Action to write <code>web/data/latest.json</code>, or run it manually via "Run workflow".</p>
+    </div>
+  </main>
+
+  <script>
+    function fmtPct(v) { return (v * 100).toFixed(2) + '%'; }
+    function fmtNum(v) { return Number(v).toFixed(4); }
+    function fmtUsd(v) { const s = Number(v); return (s >= 0 ? '' : '-') + '$' + Math.abs(s).toFixed(2); }
+
+    function renderStats(stats) {
+      const tbody = document.querySelector('#stats-table tbody');
+      tbody.innerHTML = '';
+      const assets = Object.keys(stats.mean || {});
+      assets.forEach(asset => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${asset.toUpperCase()}</td>
+          <td>${fmtNum(stats.mean[asset])}</td>
+          <td>${fmtNum(stats.std[asset])}</td>
+          <td>${fmtNum(stats.min[asset])}</td>
+          <td>${fmtNum(stats.max[asset])}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderHedge(table) {
+      const tbody = document.querySelector('#hedge-table tbody');
+      tbody.innerHTML = '';
+      table.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.target}</td>
+          <td>${row.hedge}</td>
+          <td>${row.hedge_ratio_units.toFixed(3)}</td>
+          <td>${row.target_w.toFixed(3)}</td>
+          <td>${row.hedge_w.toFixed(3)}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderExamples(examples, notional) {
+      const note = document.getElementById('notional-note');
+      note.textContent = `Using total absolute notional: $${Number(notional).toFixed(0)}`;
+      const tbody = document.querySelector('#examples-table tbody');
+      tbody.innerHTML = '';
+      examples.forEach(ex => {
+        const tr = document.createElement('tr');
+        const hedgeSign = ex.hedge_units_per_target_unit < 0 ? 'short' : 'long';
+        tr.innerHTML = `
+          <td>${ex.target}</td>
+          <td>${ex.hedge}</td>
+          <td>${fmtUsd(ex.target_dollars)}</td>
+          <td>${fmtUsd(-Math.abs(ex.hedge_dollars))}</td>
+          <td>${hedgeSign} ${Math.abs(ex.hedge_units_per_target_unit).toFixed(3)} ${ex.hedge}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function load() {
+      const statusCard = document.getElementById('status-card');
+      const statusText = document.getElementById('status-text');
+      try {
+        const res = await fetch('./data/latest.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Fetch failed');
+        const data = await res.json();
+
+        document.getElementById('corr').textContent = fmtNum(data.corr);
+        document.getElementById('lookback').textContent = data.lookback_days;
+        document.getElementById('updated').textContent = data.generated_at;
+
+        renderStats(data.stats || {});
+        renderHedge(data.hedge_table || []);
+        renderExamples(data.examples || [], data.example_notional || 100);
+      } catch (err) {
+        statusCard.style.display = 'block';
+        statusText.textContent = 'Data not available yet. Trigger the refresh workflow to generate data.';
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
