@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-01-01T16:27:33.232066Z",
+  "generated_at": "2026-01-01T16:47:15.088872Z",
   "lookback_days": 180,
   "example_notional": 100.0,
   "provider": "cryptocompare",
-  "corr": 0.824930146621189,
+  "corr": 0.8249288343902446,
   "stats": {
     "mean": {
-      "btc": -3.9315995170467556e-05,
-      "eth": 6.498815724574588e-05
+      "btc": -3.9298194041010374e-05,
+      "eth": 6.478269907435704e-05
     },
     "std": {
-      "btc": 0.004201237821580521,
-      "eth": 0.007025651553438746
+      "btc": 0.004201233500182067,
+      "eth": 0.0070257186358448935
     },
     "min": {
       "btc": -0.03714671634653788,
@@ -26,32 +26,32 @@
     {
       "target": "BTC",
       "hedge": "ETH",
-      "hedge_ratio_units": 0.49329627377415025,
-      "target_w": 0.6696594758604765,
-      "hedge_w": -0.3303405241395236
+      "hedge_ratio_units": 0.493290271634919,
+      "target_w": 0.6696621674935018,
+      "hedge_w": -0.3303378325064982
     },
     {
       "target": "ETH",
       "hedge": "BTC",
-      "hedge_ratio_units": 1.3795152791201086,
-      "target_w": 0.4202536578667305,
-      "hedge_w": -0.5797463421332694
+      "hedge_ratio_units": 1.3795276755672305,
+      "target_w": 0.42025146850272316,
+      "hedge_w": -0.5797485314972769
     }
   ],
   "examples": [
     {
       "target": "BTC",
       "hedge": "ETH",
-      "target_dollars": 66.96594758604765,
-      "hedge_dollars": -33.03405241395236,
-      "hedge_units_per_target_unit": -0.49329627377415025
+      "target_dollars": 66.96621674935018,
+      "hedge_dollars": -33.03378325064982,
+      "hedge_units_per_target_unit": -0.493290271634919
     },
     {
       "target": "ETH",
       "hedge": "BTC",
-      "target_dollars": 42.02536578667305,
-      "hedge_dollars": -57.97463421332694,
-      "hedge_units_per_target_unit": -1.3795152791201086
+      "target_dollars": 42.025146850272314,
+      "hedge_dollars": -57.97485314972769,
+      "hedge_units_per_target_unit": -1.3795276755672305
     }
   ]
 }
