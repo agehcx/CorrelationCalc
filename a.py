@@ -89,15 +89,19 @@ COINGECKO_IDS = {
 }
 
 
-def fetch_coingecko(symbol: str, lookback_days: int) -> pd.DataFrame:
-    """Fetch hourly prices from CoinGecko market_chart as a fallback.
+def fetch_coingecko(symbol: str, start_ts: int, end_ts: int, lookback_days: int) -> pd.DataFrame:
+    """Fetch prices from CoinGecko market_chart/range to allow >90d hourly.
 
-    CoinGecko now requires an API key. Provide via env COINGECKO_API_KEY.
-    If missing, we try the public demo key but it may be rate-limited.
+    Requires COINGECKO_API_KEY (pro) or falls back to demo key header.
     """
     coin_id = COINGECKO_IDS[symbol]
-    url = COINGECKO_MARKET_CHART.format(id=coin_id)
-    params = {"vs_currency": "usd", "days": lookback_days, "interval": "hourly"}
+    url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart/range"
+    params = {
+        "vs_currency": "usd",
+        "from": int(start_ts / 1000),
+        "to": int(end_ts / 1000),
+        "precision": "full",
+    }
 
     api_key = os.getenv("COINGECKO_API_KEY")
     demo_key = "CG-DATA-API-KEY"
@@ -110,7 +114,7 @@ def fetch_coingecko(symbol: str, lookback_days: int) -> pd.DataFrame:
     else:
         headers["x-cg-demo-api-key"] = demo_key
 
-    resp = requests.get(url, params=params, headers=headers, timeout=20)
+    resp = requests.get(url, params=params, headers=headers, timeout=30)
     try:
         resp.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -139,7 +143,7 @@ def fetch_prices(
     """
 
     if provider == "coingecko":
-        return fetch_coingecko(symbol, lookback_days)
+        return fetch_coingecko(symbol, start_ts, end_ts, lookback_days)
     if provider == "binance":
         return fetch_klines(symbol, start_ts, end_ts)
 
@@ -148,7 +152,7 @@ def fetch_prices(
         return fetch_klines(symbol, start_ts, end_ts)
     except Exception as e:
         print(f"[warn] Binance failed for {symbol}: {e}. Falling back to CoinGecko...", file=sys.stderr)
-        return fetch_coingecko(symbol, lookback_days)
+        return fetch_coingecko(symbol, start_ts, end_ts, lookback_days)
 
 
 def hedge_ratio_min_var(corr_val: float, sigma_target: float, sigma_hedge: float) -> float:
