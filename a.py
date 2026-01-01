@@ -106,8 +106,27 @@ def fetch_coingecko(symbol: str, lookback_days: int) -> pd.DataFrame:
     return df[["timestamp", "close"]]
 
 
-def fetch_prices(symbol: str, start_ts: int, end_ts: int, lookback_days: int) -> pd.DataFrame:
-    """Try Binance first; fall back to CoinGecko on HTTP errors (e.g., 451)."""
+def fetch_prices(
+    symbol: str,
+    start_ts: int,
+    end_ts: int,
+    lookback_days: int,
+    provider: str = "auto",
+) -> pd.DataFrame:
+    """Fetch prices using provider policy.
+
+    provider options:
+      - "auto" (default): try Binance, fall back to CoinGecko
+      - "binance": use Binance only
+      - "coingecko": use CoinGecko only
+    """
+
+    if provider == "coingecko":
+        return fetch_coingecko(symbol, lookback_days)
+    if provider == "binance":
+        return fetch_klines(symbol, start_ts, end_ts)
+
+    # auto
     try:
         return fetch_klines(symbol, start_ts, end_ts)
     except Exception as e:
@@ -125,7 +144,11 @@ def dollar_neutral_weights(h: float) -> tuple[float, float]:
     return 1 / total, -abs(h) / total
 
 
-def compute_metrics(lookback_days: int = LOOKBACK_DAYS, notional: float = 100.0) -> dict:
+def compute_metrics(
+    lookback_days: int = LOOKBACK_DAYS,
+    notional: float = 100.0,
+    provider: str = "auto",
+) -> dict:
     end = dt.datetime.utcnow()
     start = end - dt.timedelta(days=lookback_days)
     start_ms = int(start.timestamp() * 1000)
@@ -133,7 +156,7 @@ def compute_metrics(lookback_days: int = LOOKBACK_DAYS, notional: float = 100.0)
 
     prices = {}
     for sym in SYMBOLS:
-        prices[sym] = fetch_prices(sym, start_ms, end_ms, lookback_days).set_index("timestamp")
+        prices[sym] = fetch_prices(sym, start_ms, end_ms, lookback_days, provider=provider).set_index("timestamp")
 
     df = pd.concat(prices.values(), axis=1, keys=SYMBOLS)
     df = df.dropna()
@@ -194,6 +217,7 @@ def compute_metrics(lookback_days: int = LOOKBACK_DAYS, notional: float = 100.0)
         "generated_at": end.isoformat() + "Z",
         "lookback_days": lookback_days,
         "example_notional": notional,
+        "provider": provider,
         "corr": corr,
         "stats": stats.to_dict(),
         "hedge_table": table.to_dict(orient="records"),
@@ -246,13 +270,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--json", help="Path to write JSON output", default=None)
     parser.add_argument("--notional", type=float, default=100.0, help="Example total absolute notional for sizing output")
     parser.add_argument("--lookback-days", type=int, default=LOOKBACK_DAYS, help="Lookback window in days")
+    parser.add_argument(
+        "--provider",
+        choices=["auto", "binance", "coingecko"],
+        default="auto",
+        help="Data source: auto (try Binance, fallback CoinGecko), binance, or coingecko",
+    )
     parser.add_argument("--no-print", action="store_true", help="Skip stdout printing")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    metrics = compute_metrics(lookback_days=args.lookback_days, notional=args.notional)
+    metrics = compute_metrics(lookback_days=args.lookback_days, notional=args.notional, provider=args.provider)
 
     if not args.no_print:
         print_metrics(metrics, notional=args.notional)

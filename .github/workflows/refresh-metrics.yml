@@ -28,9 +28,9 @@ jobs:
             pip install pandas requests
           fi
 
-      - name: Compute metrics JSON
+      - name: Compute metrics JSON (force CoinGecko to avoid Binance 451s on runners)
         run: |
-          python a.py --json web/data/latest.json --no-print --notional 100 --lookback-days 180
+          python a.py --json web/data/latest.json --no-print --notional 100 --lookback-days 180 --provider coingecko
 
       - name: Commit updated data
         run: |

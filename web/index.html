@@ -194,6 +194,11 @@
         renderStats(data.stats || {});
         renderHedge(data.hedge_table || []);
         renderExamples(data.examples || [], data.example_notional || 100);
+        const providerNote = document.createElement('div');
+        providerNote.className = 'muted';
+        providerNote.style.marginTop = '6px';
+        providerNote.textContent = `Provider: ${data.provider || 'auto (Binance -> CoinGecko fallback)'}`;
+        document.querySelector('#summary').appendChild(providerNote);
       } catch (err) {
         statusCard.style.display = 'block';
         statusText.textContent = 'Data not available yet. Trigger the refresh workflow to generate data.';
