@@ -21,6 +21,7 @@ Run:
 
 BINANCE_KLINES = "https://api.binance.com/api/v3/klines"
 COINGECKO_MARKET_CHART = "https://api.coingecko.com/api/v3/coins/{id}/market_chart"
+CRYPTOCOMPARE_HISTO = "https://min-api.cryptocompare.com/data/v2/histohour"
 SYMBOLS = ["BTCUSDT", "ETHUSDT"]
 INTERVAL = "1h"
 LOOKBACK_DAYS = 180  # ~6 months
@@ -127,6 +128,53 @@ def fetch_coingecko(symbol: str, start_ts: int, end_ts: int, lookback_days: int)
     return df[["timestamp", "close"]]
 
 
+def fetch_cryptocompare(symbol: str, start_ts: int, end_ts: int, lookback_days: int) -> pd.DataFrame:
+    """Fetch hourly prices from CryptoCompare histohour with simple backfill pagination."""
+    cc_symbol = symbol.replace("USDT", "")  # BTCUSDT -> BTC
+    frames: List[pd.DataFrame] = []
+    current_end = end_ts
+    api_key = os.getenv("CRYPTOCOMPARE_API_KEY")
+    headers = {"accept": "application/json", "User-Agent": "correlation-calc/1.0"}
+    if api_key:
+        headers["authorization"] = f"Apikey {api_key}"
+
+    while current_end > start_ts:
+        params = {
+            "fsym": cc_symbol,
+            "tsym": "USD",
+            "limit": 2000,
+            "toTs": int(current_end / 1000),
+        }
+        resp = requests.get(CRYPTOCOMPARE_HISTO, params=params, headers=headers, timeout=20)
+        try:
+            resp.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            raise RuntimeError(f"CryptoCompare fetch failed for {symbol}: {e}") from e
+
+        payload = resp.json().get("Data", {}).get("Data", [])
+        if not payload:
+            break
+        df = pd.DataFrame(payload)[["time", "close"]]
+        df["timestamp"] = pd.to_datetime(df["time"], unit="s", utc=True)
+        frames.append(df[["timestamp", "close"]])
+
+        oldest_ms = int(df["timestamp"].min().timestamp() * 1000)
+        # step back one hour before oldest to continue pagination
+        current_end = oldest_ms - 3600 * 1000
+        # respect rate limits
+        time.sleep(0.15)
+
+        if oldest_ms <= start_ts:
+            break
+
+    if not frames:
+        raise RuntimeError(f"No data fetched from CryptoCompare for {symbol}")
+
+    out = pd.concat(frames, ignore_index=True).sort_values("timestamp")
+    out = out[out["timestamp"] >= pd.to_datetime(start_ts, unit="ms", utc=True)]
+    return out[["timestamp", "close"]]
+
+
 def fetch_prices(
     symbol: str,
     start_ts: int,
@@ -146,13 +194,19 @@ def fetch_prices(
         return fetch_coingecko(symbol, start_ts, end_ts, lookback_days)
     if provider == "binance":
         return fetch_klines(symbol, start_ts, end_ts)
+    if provider == "cryptocompare":
+        return fetch_cryptocompare(symbol, start_ts, end_ts, lookback_days)
 
     # auto
     try:
         return fetch_klines(symbol, start_ts, end_ts)
     except Exception as e:
         print(f"[warn] Binance failed for {symbol}: {e}. Falling back to CoinGecko...", file=sys.stderr)
-        return fetch_coingecko(symbol, start_ts, end_ts, lookback_days)
+        try:
+            return fetch_coingecko(symbol, start_ts, end_ts, lookback_days)
+        except Exception as e2:
+            print(f"[warn] CoinGecko failed for {symbol}: {e2}. Falling back to CryptoCompare...", file=sys.stderr)
+            return fetch_cryptocompare(symbol, start_ts, end_ts, lookback_days)
 
 
 def hedge_ratio_min_var(corr_val: float, sigma_target: float, sigma_hedge: float) -> float:
@@ -293,9 +347,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lookback-days", type=int, default=LOOKBACK_DAYS, help="Lookback window in days")
     parser.add_argument(
         "--provider",
-        choices=["auto", "binance", "coingecko"],
+        choices=["auto", "binance", "coingecko", "cryptocompare"],
         default="auto",
-        help="Data source: auto (try Binance, fallback CoinGecko), binance, or coingecko",
+        help="Data source: auto (binance -> coingecko -> cryptocompare), or choose binance/coingecko/cryptocompare",
     )
     parser.add_argument("--no-print", action="store_true", help="Skip stdout printing")
     return parser.parse_args()
