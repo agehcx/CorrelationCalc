@@ -14,7 +14,7 @@ Compute hourly return correlation (ETHUSDT vs BTCUSDT) over the last ~6 months
 using Binance spot klines (no API key required).
 
 Run:
-    pyv a.py
+    python hedge_metrics.py
 """
 
 
