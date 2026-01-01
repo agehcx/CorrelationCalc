@@ -2,6 +2,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import sys
 import time
 from typing import List
 import pandas as pd
@@ -18,6 +19,7 @@ Run:
 
 
 BINANCE_KLINES = "https://api.binance.com/api/v3/klines"
+COINGECKO_MARKET_CHART = "https://api.coingecko.com/api/v3/coins/{id}/market_chart"
 SYMBOLS = ["BTCUSDT", "ETHUSDT"]
 INTERVAL = "1h"
 LOOKBACK_DAYS = 180  # ~6 months
@@ -37,7 +39,11 @@ def fetch_klines(symbol: str, start_ts: int, end_ts: int) -> pd.DataFrame:
             "limit": LIMIT,
         }
         resp = requests.get(BINANCE_KLINES, params=params, timeout=10)
-        resp.raise_for_status()
+        try:
+            resp.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            # Propagate with context so callers can decide to fall back.
+            raise RuntimeError(f"Binance klines fetch failed for {symbol}: {e}") from e
         data = resp.json()
         if not data:
             break
@@ -76,6 +82,39 @@ def fetch_klines(symbol: str, start_ts: int, end_ts: int) -> pd.DataFrame:
     return out[["timestamp", "close"]]
 
 
+COINGECKO_IDS = {
+    "BTCUSDT": "bitcoin",
+    "ETHUSDT": "ethereum",
+}
+
+
+def fetch_coingecko(symbol: str, lookback_days: int) -> pd.DataFrame:
+    """Fetch hourly prices from CoinGecko market_chart as a fallback."""
+    coin_id = COINGECKO_IDS[symbol]
+    url = COINGECKO_MARKET_CHART.format(id=coin_id)
+    params = {"vs_currency": "usd", "days": lookback_days, "interval": "hourly"}
+    resp = requests.get(url, params=params, timeout=15)
+    try:
+        resp.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        raise RuntimeError(f"CoinGecko fetch failed for {symbol}: {e}") from e
+    data = resp.json().get("prices", [])
+    if not data:
+        raise RuntimeError(f"CoinGecko returned no data for {symbol}")
+    df = pd.DataFrame(data, columns=["open_time", "close"])
+    df["timestamp"] = pd.to_datetime(df["open_time"], unit="ms", utc=True)
+    return df[["timestamp", "close"]]
+
+
+def fetch_prices(symbol: str, start_ts: int, end_ts: int, lookback_days: int) -> pd.DataFrame:
+    """Try Binance first; fall back to CoinGecko on HTTP errors (e.g., 451)."""
+    try:
+        return fetch_klines(symbol, start_ts, end_ts)
+    except Exception as e:
+        print(f"[warn] Binance failed for {symbol}: {e}. Falling back to CoinGecko...", file=sys.stderr)
+        return fetch_coingecko(symbol, lookback_days)
+
+
 def hedge_ratio_min_var(corr_val: float, sigma_target: float, sigma_hedge: float) -> float:
     return corr_val * (sigma_target / sigma_hedge)
 
@@ -94,7 +133,7 @@ def compute_metrics(lookback_days: int = LOOKBACK_DAYS, notional: float = 100.0)
 
     prices = {}
     for sym in SYMBOLS:
-        prices[sym] = fetch_klines(sym, start_ms, end_ms).set_index("timestamp")
+        prices[sym] = fetch_prices(sym, start_ms, end_ms, lookback_days).set_index("timestamp")
 
     df = pd.concat(prices.values(), axis=1, keys=SYMBOLS)
     df = df.dropna()
