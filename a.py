@@ -2,6 +2,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import sys
 import time
 from typing import List
@@ -89,11 +90,23 @@ COINGECKO_IDS = {
 
 
 def fetch_coingecko(symbol: str, lookback_days: int) -> pd.DataFrame:
-    """Fetch hourly prices from CoinGecko market_chart as a fallback."""
+    """Fetch hourly prices from CoinGecko market_chart as a fallback.
+
+    CoinGecko now requires an API key. Provide via env COINGECKO_API_KEY.
+    If missing, we try the public demo key but it may be rate-limited.
+    """
     coin_id = COINGECKO_IDS[symbol]
     url = COINGECKO_MARKET_CHART.format(id=coin_id)
     params = {"vs_currency": "usd", "days": lookback_days, "interval": "hourly"}
-    resp = requests.get(url, params=params, timeout=15)
+
+    api_key = os.getenv("COINGECKO_API_KEY", "CG-DATA-API-KEY")
+    headers = {
+        "accept": "application/json",
+        "x-cg-demo-api-key": api_key,  # works with demo key or real key
+        "User-Agent": "correlation-calc/1.0",
+    }
+
+    resp = requests.get(url, params=params, headers=headers, timeout=20)
     try:
         resp.raise_for_status()
     except requests.exceptions.HTTPError as e:

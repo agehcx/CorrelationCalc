@@ -2,7 +2,7 @@ name: Refresh BTC/ETH Metrics
 
 on:
   schedule:
-    - cron: "0 * * * *"  # hourly
+    - cron: "0 */8 * * *"  # every 8 hours
   workflow_dispatch:
 
 permissions:
@@ -11,6 +11,8 @@ permissions:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    env:
+      COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
