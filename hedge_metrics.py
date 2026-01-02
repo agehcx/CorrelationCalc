@@ -24,7 +24,7 @@ COINGECKO_MARKET_CHART = "https://api.coingecko.com/api/v3/coins/{id}/market_cha
 CRYPTOCOMPARE_HISTO = "https://min-api.cryptocompare.com/data/v2/histohour"
 SYMBOLS = ["BTCUSDT", "ETHUSDT"]
 INTERVAL = "1h"
-LOOKBACK_DAYS = 180  # ~6 months
+LOOKBACK_DAYS = 30  # ~1 month
 LIMIT = 1000  # Binance max per request
 
 
