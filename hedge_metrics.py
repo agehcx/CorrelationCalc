@@ -24,7 +24,8 @@ COINGECKO_MARKET_CHART = "https://api.coingecko.com/api/v3/coins/{id}/market_cha
 CRYPTOCOMPARE_HISTO = "https://min-api.cryptocompare.com/data/v2/histohour"
 SYMBOLS = ["BTCUSDT", "ETHUSDT"]
 INTERVAL = "1h"
-LOOKBACK_DAYS = 30  # ~1 month
+LOOKBACK_DAYS = 30  # default single lookback
+LOOKBACK_CHOICES = [30, 60, 120, 180]
 LIMIT = 1000  # Binance max per request
 
 
@@ -219,28 +220,41 @@ def dollar_neutral_weights(h: float) -> tuple[float, float]:
     return 1 / total, -abs(h) / total
 
 
-def compute_metrics(
-    lookback_days: int = LOOKBACK_DAYS,
-    notional: float = 100.0,
-    provider: str = "auto",
-) -> dict:
-    end = dt.datetime.utcnow()
-    start = end - dt.timedelta(days=lookback_days)
+def load_prices(max_lookback_days: int, provider: str) -> tuple[pd.DataFrame, dt.datetime]:
+    """Fetch hourly prices for the maximum lookback window once and return tidy frame."""
+    end = dt.datetime.now(dt.timezone.utc)
+    start = end - dt.timedelta(days=max_lookback_days)
     start_ms = int(start.timestamp() * 1000)
     end_ms = int(end.timestamp() * 1000)
 
     prices = {}
     for sym in SYMBOLS:
-        prices[sym] = fetch_prices(sym, start_ms, end_ms, lookback_days, provider=provider).set_index("timestamp")
+        prices[sym] = fetch_prices(sym, start_ms, end_ms, max_lookback_days, provider=provider).set_index("timestamp")
 
     df = pd.concat(prices.values(), axis=1, keys=SYMBOLS)
     df = df.dropna()
     df.columns = df.columns.droplevel(1)
     df = df.rename(columns={"BTCUSDT": "btc", "ETHUSDT": "eth"})
+    return df, end
 
-    returns = df.apply(lambda x: x.pct_change()).dropna()
+
+def compute_single_view(
+    price_df: pd.DataFrame,
+    end: dt.datetime,
+    lookback_days: int,
+    notional: float,
+    provider: str,
+) -> dict:
+    cutoff = end - dt.timedelta(days=lookback_days)
+    window = price_df[price_df.index >= cutoff]
+    if window.empty:
+        raise RuntimeError(f"No price data available for {lookback_days}d window")
+
+    returns = window.pct_change().dropna()
+    if returns.empty:
+        raise RuntimeError(f"No returns for {lookback_days}d window")
+
     corr = float(returns["btc"].corr(returns["eth"]))
-
     stats = returns.describe().T[["mean", "std", "min", "max"]]
     std_btc = float(stats.loc["btc", "std"])
     std_eth = float(stats.loc["eth", "std"])
@@ -289,10 +303,7 @@ def compute_metrics(
         )
 
     return {
-        "generated_at": end.isoformat() + "Z",
         "lookback_days": lookback_days,
-        "example_notional": notional,
-        "provider": provider,
         "corr": corr,
         "stats": stats.to_dict(),
         "hedge_table": table.to_dict(orient="records"),
@@ -300,17 +311,44 @@ def compute_metrics(
     }
 
 
-def print_metrics(metrics: dict, notional: float) -> None:
-    corr = metrics["corr"]
-    stats = pd.DataFrame(metrics["stats"])
+def compute_all_metrics(
+    lookbacks: List[int],
+    notional: float = 100.0,
+    provider: str = "auto",
+) -> dict:
+    """Compute metrics for multiple lookbacks using a single price fetch."""
+
+    if not lookbacks:
+        raise ValueError("lookbacks list cannot be empty")
+
+    max_lb = max(lookbacks)
+    price_df, end = load_prices(max_lb, provider)
+
+    views = {}
+    for lb in sorted(lookbacks):
+        views[str(lb)] = compute_single_view(price_df, end, lb, notional, provider)
+
+    return {
+        "generated_at": end.isoformat() + "Z",
+        "lookbacks": views,
+        "example_notional": notional,
+        "provider": provider,
+    }
+
+
+def print_metrics(view: dict, notional: float, provider: str, generated_at: str | None = None) -> None:
+    corr = view["corr"]
+    stats = pd.DataFrame(view["stats"])
     stats = stats[["mean", "std", "min", "max"]]
 
-    print(f"Hourly return correlation (BTC vs ETH) over ~{metrics['lookback_days']}d: {corr:.4f}")
+    print(f"Hourly return correlation (BTC vs ETH) over ~{view['lookback_days']}d: {corr:.4f}")
+    if generated_at:
+        print(f"Generated at: {generated_at} | Provider: {provider}")
 
     print("\nStats:")
     print(stats.T)
 
-    table = pd.DataFrame(metrics["hedge_table"])
+    table = pd.DataFrame(view["hedge_table"])
     table_display = table.copy()
     table_display["hedge_ratio_units"] = table_display["hedge_ratio_units"].map(lambda x: f"{x:+.3f}")
     table_display["target_w"] = table_display["target_w"].map(lambda x: f"{x:+.3f}")
@@ -324,7 +362,7 @@ def print_metrics(metrics: dict, notional: float) -> None:
     print("- target_w / hedge_w: dollar-neutral weights (abs weights sum to 1)")
 
     print(f"\nExample sizing with ${notional} total abs notional (long target, short hedge):")
-    for ex in metrics["examples"]:
+    for ex in view["examples"]:
         tgt = ex["target"]
         hed = ex["hedge"]
         hedge_units = ex["hedge_units_per_target_unit"]
@@ -344,7 +382,19 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="BTC/ETH hedge ratios and stats")
     parser.add_argument("--json", help="Path to write JSON output", default=None)
     parser.add_argument("--notional", type=float, default=100.0, help="Example total absolute notional for sizing output")
-    parser.add_argument("--lookback-days", type=int, default=LOOKBACK_DAYS, help="Lookback window in days")
+    parser.add_argument("--lookback-days", type=int, default=LOOKBACK_DAYS, help="Single lookback window in days (legacy)")
+    parser.add_argument(
+        "--lookbacks",
+        type=str,
+        default=None,
+        help="Comma-separated lookbacks in days (e.g., 30,60,120,180). Overrides --lookback-days if provided.",
+    )
+    parser.add_argument(
+        "--print-lookback",
+        type=int,
+        default=None,
+        help="Which lookback to print to stdout (defaults to first provided lookback)",
+    )
     parser.add_argument(
         "--provider",
         choices=["auto", "binance", "coingecko", "cryptocompare"],
@@ -357,10 +407,18 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    metrics = compute_metrics(lookback_days=args.lookback_days, notional=args.notional, provider=args.provider)
+    if args.lookbacks:
+        lookbacks = [int(x) for x in args.lookbacks.split(",") if x.strip()]
+    else:
+        lookbacks = [args.lookback_days]
+
+    metrics = compute_all_metrics(lookbacks=lookbacks, notional=args.notional, provider=args.provider)
 
     if not args.no_print:
-        print_metrics(metrics, notional=args.notional)
+        to_print = str(args.print_lookback or lookbacks[0])
+        if to_print not in metrics["lookbacks"]:
+            raise ValueError(f"Requested print lookback {to_print} not in computed set {list(metrics['lookbacks'].keys())}")
+        print_metrics(metrics["lookbacks"][to_print], notional=args.notional, provider=metrics["provider"], generated_at=metrics["generated_at"])
 
     if args.json:
         write_json(metrics, args.json)
