@@ -35,7 +35,7 @@ jobs:
 
       - name: Compute metrics JSON (use CryptoCompare to avoid Binance/CG limits)
         run: |
-          python hedge_metrics.py --json web/data/latest.json --no-print --notional 100 --lookback-days 180 --provider cryptocompare
+          python hedge_metrics.py --json web/data/latest.json --no-print --notional 100 --lookback-days 30 --provider cryptocompare
 
       - name: Commit updated data
         run: |
