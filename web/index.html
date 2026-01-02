@@ -100,7 +100,7 @@
           <div class="stat-value" id="lookback">--</div>
         </div>
         <div>
-          <div class="stat-label">Last updated (UTC)</div>
+          <div class="stat-label">Last updated (GMT+7)</div>
           <div class="stat-value" id="updated">--</div>
         </div>
       </div>
@@ -163,6 +163,16 @@
     function fmtUsd(v) { const s = Number(v); return (s >= 0 ? '' : '-') + '$' + Math.abs(s).toFixed(2); }
     function clampMultiplier(v) { return Math.min(100, Math.max(1, Number.isFinite(v) ? v : 1)); }
     function fmtMult(v) { return Number(v).toFixed(2).replace(/\.0+$|0+$/, '') + '×'; }
+    function fmtLocal(dt) {
+      const d = new Date(dt);
+      if (Number.isNaN(d.getTime())) return 'n/a';
+      return d.toLocaleString('en-GB', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
+      }).replace(',', '') + ' GMT+7';
+    }
 
     function renderStats(stats) {
       const tbody = document.querySelector('#stats-table tbody');
@@ -226,7 +236,7 @@
 
         document.getElementById('corr').textContent = fmtNum(data.corr);
         document.getElementById('lookback').textContent = data.lookback_days;
-        document.getElementById('updated').textContent = data.generated_at;
+        document.getElementById('updated').textContent = fmtLocal(data.generated_at);
 
         renderStats(data.stats || {});
         renderHedge(data.hedge_table || []);
