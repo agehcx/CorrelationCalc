@@ -329,7 +329,7 @@ def compute_all_metrics(
         views[str(lb)] = compute_single_view(price_df, end, lb, notional, provider)
 
     return {
-        "generated_at": end.isoformat() + "Z",
+        "generated_at": end.isoformat().replace("+00:00", "Z"),
         "lookbacks": views,
         "example_notional": notional,
         "provider": provider,
