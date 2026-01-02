@@ -25,7 +25,7 @@ CRYPTOCOMPARE_HISTO = "https://min-api.cryptocompare.com/data/v2/histohour"
 SYMBOLS = ["BTCUSDT", "ETHUSDT"]
 INTERVAL = "1h"
 LOOKBACK_DAYS = 30  # default single lookback
-LOOKBACK_CHOICES = [30, 60, 120, 180]
+LOOKBACK_CHOICES = [30, 60, 120, 150, 180]
 LIMIT = 1000  # Binance max per request
 
 
