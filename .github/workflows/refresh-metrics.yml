@@ -16,6 +16,7 @@ jobs:
     environment: Production
     env:
       COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+      CRYPTOCOMPARE_API_KEY: ${{ secrets.CRYPTOCOMPARE_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
