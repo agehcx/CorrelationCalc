@@ -146,6 +146,8 @@ if not api_key:
         df["timestamp"] = pd.to_datetime(df["open_time"], unit="ms", utc=True)
         return df[["timestamp", "close"]]
 
+    # Unreachable: the loop above either returns on success or raises on the last attempt.
+    # Kept intentionally as a safeguard for future refactors.
     raise RuntimeError(f"CoinGecko fetch failed for {symbol} after {max_attempts} attempts")
 
 
