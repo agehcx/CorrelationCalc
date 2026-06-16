@@ -80,7 +80,7 @@ The workflow can also be triggered manually via **Actions → Run workflow** or 
 
 | Variable | Required | Description |
 |---|---|---|
-| `COINGECKO_API_KEY` | No | CoinGecko Pro API key (uses demo key if not set) |
+| `COINGECKO_API_KEY` | Yes (for `--provider coingecko`) | CoinGecko Pro API key |
 | `CRYPTOCOMPARE_API_KEY` | No | CryptoCompare API key for higher rate limits |
 
 ## Project structure
