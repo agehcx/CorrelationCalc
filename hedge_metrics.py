@@ -97,10 +97,9 @@ def fetch_coingecko(symbol: str, start_ts: int, end_ts: int, lookback_days: int)
     Requires COINGECKO_API_KEY (pro).
     """
     coin_id = COINGECKO_IDS[symbol]
-    api_key = os.getenv("COINGECKO_API_KEY")
-    if not api_key:
-        raise RuntimeError("COINGECKO_API_KEY is required when provider=coingecko")
-
+api_key = os.getenv("COINGECKO_API_KEY")
+if not api_key:
+    raise RuntimeError("COINGECKO_API_KEY is required to fetch data from CoinGecko")
     url = f"https://pro-api.coingecko.com/api/v3/coins/{coin_id}/market_chart/range"
     params = {
         "vs_currency": "usd",
