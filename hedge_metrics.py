@@ -94,10 +94,13 @@ COINGECKO_IDS = {
 def fetch_coingecko(symbol: str, start_ts: int, end_ts: int, lookback_days: int) -> pd.DataFrame:
     """Fetch prices from CoinGecko market_chart/range to allow >90d hourly.
 
-    Requires COINGECKO_API_KEY (pro) or falls back to demo key header.
+    Requires COINGECKO_API_KEY (pro).
     """
     coin_id = COINGECKO_IDS[symbol]
-    url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart/range"
+api_key = os.getenv("COINGECKO_API_KEY")
+if not api_key:
+    raise RuntimeError("COINGECKO_API_KEY is required to fetch data from CoinGecko")
+    url = f"https://pro-api.coingecko.com/api/v3/coins/{coin_id}/market_chart/range"
     params = {
         "vs_currency": "usd",
         "from": int(start_ts / 1000),
@@ -105,28 +108,47 @@ def fetch_coingecko(symbol: str, start_ts: int, end_ts: int, lookback_days: int)
         "precision": "full",
     }
 
-    api_key = os.getenv("COINGECKO_API_KEY")
-    demo_key = "CG-DATA-API-KEY"
     headers = {
         "accept": "application/json",
         "User-Agent": "correlation-calc/1.0",
+        "x-cg-pro-api-key": api_key,
     }
-    if api_key:
-        headers["x-cg-pro-api-key"] = api_key
-    else:
-        headers["x-cg-demo-api-key"] = demo_key
+    retryable_statuses = {429, 500, 502, 503, 504}
+    max_attempts = 4
 
-    resp = requests.get(url, params=params, headers=headers, timeout=30)
-    try:
-        resp.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        raise RuntimeError(f"CoinGecko fetch failed for {symbol}: {e}") from e
-    data = resp.json().get("prices", [])
-    if not data:
-        raise RuntimeError(f"CoinGecko returned no data for {symbol}")
-    df = pd.DataFrame(data, columns=["open_time", "close"])
-    df["timestamp"] = pd.to_datetime(df["open_time"], unit="ms", utc=True)
-    return df[["timestamp", "close"]]
+    for attempt in range(1, max_attempts + 1):
+        try:
+            resp = requests.get(url, params=params, headers=headers, timeout=30)
+            resp.raise_for_status()
+            payload = resp.json()
+        except requests.exceptions.HTTPError as e:
+            status_code = e.response.status_code if e.response is not None else None
+            if status_code in retryable_statuses and attempt < max_attempts:
+                time.sleep(2 ** (attempt - 1))
+                continue
+            raise RuntimeError(f"CoinGecko fetch failed for {symbol}: {e}") from e
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            if attempt < max_attempts:
+                time.sleep(2 ** (attempt - 1))
+                continue
+            raise RuntimeError(f"CoinGecko fetch failed for {symbol} after {max_attempts} attempts: {e}") from e
+        except ValueError as e:
+            raise RuntimeError(f"CoinGecko returned invalid JSON for {symbol}: {e}") from e
+
+        if not isinstance(payload, dict):
+            raise RuntimeError(f"CoinGecko returned malformed payload for {symbol}")
+
+        data = payload.get("prices")
+        if not isinstance(data, list) or not data:
+            raise RuntimeError(f"CoinGecko returned no data for {symbol}")
+
+        df = pd.DataFrame(data, columns=["open_time", "close"])
+        df["timestamp"] = pd.to_datetime(df["open_time"], unit="ms", utc=True)
+        return df[["timestamp", "close"]]
+
+    # Unreachable: the loop above either returns on success or raises on the last attempt.
+    # Kept intentionally as a safeguard for future refactors.
+    raise RuntimeError(f"CoinGecko fetch failed for {symbol} after {max_attempts} attempts")
 
 
 def fetch_cryptocompare(symbol: str, start_ts: int, end_ts: int, lookback_days: int) -> pd.DataFrame:
