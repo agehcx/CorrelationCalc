@@ -9,6 +9,13 @@ from typing import List
 import pandas as pd
 import requests
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(".env.local")
+    load_dotenv()  # fallback for .env
+except ImportError:
+    pass
+
 """
 Compute hourly return correlation (ETHUSDT vs BTCUSDT) over the last ~6 months
 using Binance spot klines (no API key required).
@@ -97,10 +104,14 @@ def fetch_coingecko(symbol: str, start_ts: int, end_ts: int, lookback_days: int)
     Requires COINGECKO_API_KEY (pro).
     """
     coin_id = COINGECKO_IDS[symbol]
-api_key = os.getenv("COINGECKO_API_KEY")
-if not api_key:
-    raise RuntimeError("COINGECKO_API_KEY is required to fetch data from CoinGecko")
-    url = f"https://pro-api.coingecko.com/api/v3/coins/{coin_id}/market_chart/range"
+    api_key = os.getenv("COINGECKO_API_KEY")
+    if not api_key:
+        raise RuntimeError("COINGECKO_API_KEY is required to fetch data from CoinGecko")
+    is_pro = os.getenv("COINGECKO_IS_PRO", "false").lower() == "true"
+    domain = "pro-api.coingecko.com" if is_pro else "api.coingecko.com"
+    header_key = "x-cg-pro-api-key" if is_pro else "x-cg-demo-api-key"
+    
+    url = f"https://{domain}/api/v3/coins/{coin_id}/market_chart/range"
     params = {
         "vs_currency": "usd",
         "from": int(start_ts / 1000),
@@ -111,7 +122,7 @@ if not api_key:
     headers = {
         "accept": "application/json",
         "User-Agent": "correlation-calc/1.0",
-        "x-cg-pro-api-key": api_key,
+        header_key: api_key,
     }
     retryable_statuses = {429, 500, 502, 503, 504}
     max_attempts = 4
