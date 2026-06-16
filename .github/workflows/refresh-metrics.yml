@@ -16,7 +16,6 @@ jobs:
     environment: Production
     env:
       COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
-      CRYPTOCOMPARE_API_KEY: ${{ secrets.CRYPTOCOMPARE_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,9 +33,9 @@ jobs:
             pip install pandas requests
           fi
 
-      - name: Compute metrics JSON (use CryptoCompare to avoid Binance/CG limits)
+      - name: Compute metrics JSON (use CoinGecko free tier)
         run: |
-          python hedge_metrics.py --json web/data/latest.json --no-print --notional 100 --lookbacks "30,60,120,150,180" --provider cryptocompare
+          python hedge_metrics.py --json web/data/latest.json --no-print --notional 100 --lookbacks "30,60,120,150,180" --provider coingecko
 
       - name: Commit updated data
         run: |
