@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-10-11T19:54:05.406037Z",
+  "generated_at": "2026-10-12T04:18:37.160573Z",
   "lookbacks": {
     "30": {
       "lookback_days": 30,
-      "corr": 0.9325892860049928,
+      "corr": 0.9338551996433528,
       "stats": {
         "mean": {
-          "btc": 0.0026650242628043115,
-          "eth": 0.00011432241957862667
+          "btc": 0.0027333300362983237,
+          "eth": -2.957925855554782e-05
         },
         "std": {
-          "btc": 0.020561488434117415,
-          "eth": 0.02322990873908253
+          "btc": 0.020935444032336232,
+          "eth": 0.023643014655526873
         },
         "min": {
           "btc": -0.03304331733755028,
@@ -26,46 +26,46 @@
         {
           "target": "BTC",
           "hedge": "ETH",
-          "hedge_ratio_units": 0.825462727096827,
-          "target_w": 0.5478063096858605,
-          "hedge_w": -0.4521936903141394
+          "hedge_ratio_units": 0.8269111850281478,
+          "target_w": 0.5473719840324874,
+          "hedge_w": -0.4526280159675125
         },
         {
           "target": "ETH",
           "hedge": "BTC",
-          "hedge_ratio_units": 1.0536184709758356,
-          "target_w": 0.486945366986703,
-          "hedge_w": -0.5130546330132971
+          "hedge_ratio_units": 1.0546302307801543,
+          "target_w": 0.4867055808968091,
+          "hedge_w": -0.5132944191031908
         }
       ],
       "examples": [
         {
           "target": "BTC",
           "hedge": "ETH",
-          "target_dollars": 54.78063096858605,
-          "hedge_dollars": -45.21936903141394,
-          "hedge_units_per_target_unit": -0.825462727096827
+          "target_dollars": 54.73719840324874,
+          "hedge_dollars": -45.26280159675125,
+          "hedge_units_per_target_unit": -0.8269111850281478
         },
         {
           "target": "ETH",
           "hedge": "BTC",
-          "target_dollars": 48.6945366986703,
-          "hedge_dollars": -51.30546330132971,
-          "hedge_units_per_target_unit": -1.0536184709758356
+          "target_dollars": 48.67055808968091,
+          "hedge_dollars": -51.32944191031908,
+          "hedge_units_per_target_unit": -1.0546302307801543
         }
       ]
     },
     "60": {
       "lookback_days": 60,
-      "corr": 0.8757784610867141,
+      "corr": 0.8759005874522737,
       "stats": {
         "mean": {
-          "btc": 0.004811844900164167,
-          "eth": 0.005382048909055956
+          "btc": 0.004889219097069925,
+          "eth": 0.005413777011731946
         },
         "std": {
-          "btc": 0.02306260425110654,
-          "eth": 0.0324689575911238
+          "btc": 0.023256302200548435,
+          "eth": 0.032751612033675416
         },
         "min": {
           "btc": -0.03304331733755028,
@@ -80,46 +80,46 @@
         {
           "target": "BTC",
           "hedge": "ETH",
-          "hedge_ratio_units": 0.6220628427322086,
-          "target_w": 0.6164989257232453,
-          "hedge_w": -0.38350107427675467
+          "hedge_ratio_units": 0.6219604927685147,
+          "target_w": 0.6165378284233705,
+          "hedge_w": -0.3834621715766295
         },
         {
           "target": "ETH",
           "hedge": "BTC",
-          "hedge_ratio_units": 1.232974966861336,
-          "target_w": 0.44783305448587163,
-          "hedge_w": -0.5521669455141284
+          "hedge_ratio_units": 1.233521820146831,
+          "target_w": 0.44772340748131145,
+          "hedge_w": -0.5522765925186885
         }
       ],
       "examples": [
         {
           "target": "BTC",
           "hedge": "ETH",
-          "target_dollars": 61.649892572324525,
-          "hedge_dollars": -38.35010742767547,
-          "hedge_units_per_target_unit": -0.6220628427322086
+          "target_dollars": 61.653782842337044,
+          "hedge_dollars": -38.34621715766295,
+          "hedge_units_per_target_unit": -0.6219604927685147
         },
         {
           "target": "ETH",
           "hedge": "BTC",
-          "target_dollars": 44.783305448587164,
-          "hedge_dollars": -55.216694551412836,
-          "hedge_units_per_target_unit": -1.232974966861336
+          "target_dollars": 44.77234074813114,
+          "hedge_dollars": -55.22765925186886,
+          "hedge_units_per_target_unit": -1.233521820146831
         }
       ]
     },
     "120": {
       "lookback_days": 120,
-      "corr": 0.8794427482327479,
+      "corr": 0.8786657184699873,
       "stats": {
         "mean": {
-          "btc": 0.002311047459518683,
-          "eth": 0.0037191713132319467
+          "btc": 0.002159519423019268,
+          "eth": 0.0035230103000244138
         },
         "std": {
-          "btc": 0.019552948560263465,
-          "eth": 0.027524630623628546
+          "btc": 0.019566036616789226,
+          "eth": 0.027558345286480882
         },
         "min": {
           "btc": -0.03304331733755028,
@@ -134,46 +134,46 @@
         {
           "target": "BTC",
           "hedge": "ETH",
-          "hedge_ratio_units": 0.6247385860695253,
-          "target_w": 0.6154836283042572,
-          "hedge_w": -0.3845163716957429
+          "hedge_ratio_units": 0.6238402720766749,
+          "target_w": 0.6158241159526937,
+          "hedge_w": -0.38417588404730624
         },
         {
           "target": "ETH",
           "hedge": "BTC",
-          "hedge_ratio_units": 1.2379890800167366,
-          "target_w": 0.44682970481362744,
-          "hedge_w": -0.5531702951863726
+          "hedge_ratio_units": 1.2375819250083417,
+          "target_w": 0.44691101086556734,
+          "hedge_w": -0.5530889891344327
         }
       ],
       "examples": [
         {
           "target": "BTC",
           "hedge": "ETH",
-          "target_dollars": 61.54836283042572,
-          "hedge_dollars": -38.45163716957429,
-          "hedge_units_per_target_unit": -0.6247385860695253
+          "target_dollars": 61.58241159526937,
+          "hedge_dollars": -38.41758840473062,
+          "hedge_units_per_target_unit": -0.6238402720766749
         },
         {
           "target": "ETH",
           "hedge": "BTC",
-          "target_dollars": 44.682970481362744,
-          "hedge_dollars": -55.31702951863726,
-          "hedge_units_per_target_unit": -1.2379890800167366
+          "target_dollars": 44.691101086556735,
+          "hedge_dollars": -55.30889891344327,
+          "hedge_units_per_target_unit": -1.2375819250083417
         }
       ]
     },
     "150": {
       "lookback_days": 150,
-      "corr": 0.8820150350662406,
+      "corr": 0.8813516497320766,
       "stats": {
         "mean": {
-          "btc": 0.0003537253153815044,
-          "eth": 0.0010184721808384207
+          "btc": 0.0005220309275310541,
+          "eth": 0.0011989892166162394
         },
         "std": {
-          "btc": 0.02024893429482006,
-          "eth": 0.02859245085652639
+          "btc": 0.020212847029224528,
+          "eth": 0.02860421750789437
         },
         "min": {
           "btc": -0.06440002855166493,
@@ -188,46 +188,46 @@
         {
           "target": "BTC",
           "hedge": "ETH",
-          "hedge_ratio_units": 0.6246356628089859,
-          "target_w": 0.6155226201738091,
-          "hedge_w": -0.38447737982619085
+          "hedge_ratio_units": 0.6227971826207989,
+          "target_w": 0.6162199507796849,
+          "hedge_w": -0.3837800492203151
         },
         {
           "target": "ETH",
           "hedge": "BTC",
-          "hedge_ratio_units": 1.245446855506871,
-          "target_w": 0.44534565471791904,
-          "hedge_w": -0.5546543452820809
+          "hedge_ratio_units": 1.2472450938468835,
+          "target_w": 0.4449892905487127,
+          "hedge_w": -0.5550107094512873
         }
       ],
       "examples": [
         {
           "target": "BTC",
           "hedge": "ETH",
-          "target_dollars": 61.55226201738091,
-          "hedge_dollars": -38.44773798261908,
-          "hedge_units_per_target_unit": -0.6246356628089859
+          "target_dollars": 61.62199507796849,
+          "hedge_dollars": -38.37800492203151,
+          "hedge_units_per_target_unit": -0.6227971826207989
         },
         {
           "target": "ETH",
           "hedge": "BTC",
-          "target_dollars": 44.5345654717919,
-          "hedge_dollars": -55.46543452820809,
-          "hedge_units_per_target_unit": -1.245446855506871
+          "target_dollars": 44.49892905487127,
+          "hedge_dollars": -55.50107094512873,
+          "hedge_units_per_target_unit": -1.2472450938468835
         }
       ]
     },
     "180": {
       "lookback_days": 180,
-      "corr": 0.8802943376316902,
+      "corr": 0.8802704070396136,
       "stats": {
         "mean": {
-          "btc": 0.0007996555478837988,
-          "eth": 0.0007668628677319866
+          "btc": 0.0007641503858436831,
+          "eth": 0.0006887504812812902
         },
         "std": {
-          "btc": 0.019442101294795355,
-          "eth": 0.027033400489553636
+          "btc": 0.01949112475511362,
+          "eth": 0.027089393410520815
         },
         "min": {
           "btc": -0.06440002855166493,
@@ -242,32 +242,32 @@
         {
           "target": "BTC",
           "hedge": "ETH",
-          "hedge_ratio_units": 0.633097256413734,
-          "target_w": 0.6123334027245814,
-          "hedge_w": -0.3876665972754186
+          "hedge_ratio_units": 0.6333645077183694,
+          "target_w": 0.612233212656794,
+          "hedge_w": -0.3877667873432061
         },
         {
           "target": "ETH",
           "hedge": "BTC",
-          "hedge_ratio_units": 1.2240111815616541,
-          "target_w": 0.4496380271333982,
-          "hedge_w": -0.5503619728666018
+          "hedge_ratio_units": 1.223428184034338,
+          "target_w": 0.4497559251882525,
+          "hedge_w": -0.5502440748117473
         }
       ],
       "examples": [
         {
           "target": "BTC",
           "hedge": "ETH",
-          "target_dollars": 61.233340272458136,
-          "hedge_dollars": -38.76665972754186,
-          "hedge_units_per_target_unit": -0.633097256413734
+          "target_dollars": 61.223321265679395,
+          "hedge_dollars": -38.776678734320605,
+          "hedge_units_per_target_unit": -0.6333645077183694
         },
         {
           "target": "ETH",
           "hedge": "BTC",
-          "target_dollars": 44.96380271333982,
-          "hedge_dollars": -55.03619728666018,
-          "hedge_units_per_target_unit": -1.2240111815616541
+          "target_dollars": 44.97559251882525,
+          "hedge_dollars": -55.024407481174734,
+          "hedge_units_per_target_unit": -1.223428184034338
         }
       ]
     }
